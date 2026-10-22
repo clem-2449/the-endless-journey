@@ -14,7 +14,6 @@ export class ShipScene extends Phaser.Scene{
  constructor(){super("ShipScene")}
  create(){
   this.cameras.main.setBackgroundColor("#0b1421");
-  this.cameras.main.setBounds(0,0,WIDTH*TILE,HEIGHT*TILE);
   this.graphics=this.add.graphics();this.drawWorld();
   this.dragRect=this.add.rectangle(0,0,0,0,0x7fd4ff,.12).setStrokeStyle(1,0x7fd4ff).setOrigin(0).setDepth(30).setVisible(false);
   for(const c of state.crew){
@@ -48,7 +47,13 @@ export class ShipScene extends Phaser.Scene{
   this.input.on("wheel",(_p:unknown,_g:unknown,_dx:number,dy:number)=>{const z=this.cameras.main.zoom;this.cameras.main.setZoom(Phaser.Math.Clamp(z-dy*.001,0.65,2))});
   this.keys=this.input.keyboard!.addKeys("W,A,S,D,Z,Q,UP,DOWN,LEFT,RIGHT,SPACE") as Record<string,Phaser.Input.Keyboard.Key>;
   this.input.keyboard!.on("keydown-SPACE",()=>{state.speed=state.speed===0?1:0;notify()});
-  this.cameras.main.centerOn(WIDTH*TILE/2,HEIGHT*TILE/2);
+  this.cameras.main.centerOn(
+  WIDTH * TILE / 2,
+  HEIGHT * TILE / 2);
+  this.scale.on("resize", () => {
+  this.centerCamera();
+  });
+  this.centerCamera();
  }
  private drawWorld(){
   const g=this.graphics;g.clear();
@@ -78,6 +83,31 @@ export class ShipScene extends Phaser.Scene{
   });
   if(selected.length)addLog(`Déplacement ordonné à ${selected.length} membre(s).`);
  }
+
+private centerCamera() {
+  const camera = this.cameras.main;
+
+  const mapWidth = WIDTH * TILE;
+  const mapHeight = HEIGHT * TILE;
+
+  // Calcul du zoom pour faire tenir la carte
+  const zoomX = camera.width / mapWidth;
+  const zoomY = camera.height / mapHeight;
+
+  const zoom = Math.min(zoomX, zoomY) * 0.90;
+
+  camera.setZoom(zoom);
+
+  // Désactive les limites de déplacement
+  camera.removeBounds();
+
+  // Centre la carte dans la zone visible
+  camera.centerOn(
+    mapWidth / 2,
+    mapHeight / 2
+  );
+}
+
  update(_time:number,delta:number){
   const dt=Math.min(delta,100);
   const speed=state.speed;
