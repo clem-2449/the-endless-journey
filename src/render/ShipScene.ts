@@ -65,7 +65,7 @@ export class ShipScene extends Phaser.Scene{
   }
   g.fillStyle(0x304655,1);g.fillRect(TILE,8*TILE,(WIDTH-2)*TILE,3*TILE);
   g.lineStyle(1,0x5b7685,.5);g.strokeRect(TILE,8*TILE,(WIDTH-2)*TILE,3*TILE);
-  for(const r of rooms){if(r.name==="SECTEUR INCONNU")continue;
+  for(const r of rooms){if(!r.accessible)continue;
    const doorX=(r.x+Math.floor(r.w/2))*TILE,doorY=(r.y<10?r.y+r.h-1:r.y)*TILE;
    g.fillStyle(0x83b5c6,1);g.fillRect(doorX,doorY,TILE,TILE);
   }

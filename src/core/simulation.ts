@@ -1,4 +1,4 @@
-import type {GameState} from "./types";
+import type {GameState,SimulationProgress} from "./types";
 
 export const FOOD_PER_CREW_SECOND = 0.05;
 export const GREENHOUSE_FOOD_PER_SECOND = 0.3;
@@ -17,7 +17,14 @@ export class Simulation {
   private accumulator = 0;
   private clockAccumulator = 0;
 
-  constructor(private state: GameState, private onChange: () => void = () => {}) {}
+  constructor(private state: GameState, private onChange: () => void = () => {}, progress?: SimulationProgress) {
+    this.accumulator = progress?.accumulator ?? 0;
+    this.clockAccumulator = progress?.clockAccumulator ?? 0;
+  }
+
+  get progress(): SimulationProgress {
+    return {accumulator:this.accumulator,clockAccumulator:this.clockAccumulator};
+  }
 
   advance(elapsedMs: number): void {
     if (!Number.isFinite(elapsedMs) || elapsedMs <= 0 || !this.state.speed) return;
