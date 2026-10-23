@@ -1,15 +1,13 @@
 import Phaser from "phaser";
 import {TILE,WIDTH,HEIGHT,rooms,blocked,walkable,state,notify,addLog} from "../core/world";
 import {findPath} from "../core/pathfinding";
-import type {Point,Crew} from "../core/types";
+import type {Point} from "../core/types";
 export class ShipScene extends Phaser.Scene{
  private graphics!:Phaser.GameObjects.Graphics;
  private labels:Phaser.GameObjects.Text[]=[];
  private people=new Map<string,Phaser.GameObjects.Container>();
  private dragStart:Phaser.Math.Vector2|null=null;
  private dragRect!:Phaser.GameObjects.Rectangle;
- private clockAccumulator=0;
- private moveAccumulator=0;
  private keys!:Record<string,Phaser.Input.Keyboard.Key>;
  constructor(){super("ShipScene")}
  create(){
@@ -76,6 +74,10 @@ export class ShipScene extends Phaser.Scene{
   const target={x:Math.floor(wx/TILE),y:Math.floor(wy/TILE)};
   if(!walkable(target.x,target.y)){addLog("Destination inaccessible.");return}
   const selected=state.crew.filter(c=>c.selected);
+  if(selected.some(c=>c.id===state.greenhouse.workerId)){
+   state.greenhouse.workerId=null;
+   addLog("Affectation à la serre interrompue par un ordre de déplacement.");
+  }
   selected.forEach((c,i)=>{
    const candidates:Point[]=[target,...[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]].map(([dx,dy])=>({x:target.x+dx,y:target.y+dy}))];
    const dest=candidates[i%candidates.length];
@@ -110,10 +112,6 @@ private centerCamera() {
 
  update(_time:number,delta:number){
   const dt=Math.min(delta,100);
-  const speed=state.speed;
-  if(speed){this.clockAccumulator+=dt*speed;this.moveAccumulator+=dt*speed}
-  while(this.clockAccumulator>=1000){state.time++;this.clockAccumulator-=1000;notify()}
-  while(this.moveAccumulator>=250){this.moveAccumulator-=250;for(const c of state.crew){if(c.path.length)c.position=c.path.shift()!}}
   for(const c of state.crew){const node=this.people.get(c.id)!;node.setPosition((c.position.x+.5)*TILE,(c.position.y+.5)*TILE);(node.list[0] as Phaser.GameObjects.Arc).setVisible(c.selected)}
   const pan=dt*.5/this.cameras.main.zoom;
   if(this.keys.A.isDown||this.keys.Q.isDown||this.keys.LEFT.isDown)this.cameras.main.scrollX-=pan;

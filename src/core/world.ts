@@ -1,3 +1,4 @@
+import {findPath} from "./pathfinding";
 import type {Crew,GameState} from "./types";
 export const TILE=32,WIDTH=30,HEIGHT=20;
 export const rooms=[
@@ -21,7 +22,27 @@ const crew:Crew[]=[
  {id:"idris",name:"Idris Kane",color:0xffc67c,position:{x:13,y:9},path:[],selected:true},
  {id:"elena",name:"Elena Voss",color:0xc6a0ff,position:{x:22,y:9},path:[],selected:true}
 ];
-export const state:GameState={time:8*3600+30*60,speed:1,crew,logs:["Prototype opérationnel.","Cliquez sur un membre ou dessinez un rectangle de sélection.","Clic droit : déplacement de l'équipe."]};
-export function addLog(message:string){state.logs=[message,...state.logs].slice(0,8);window.dispatchEvent(new Event("hardship-update"))}
-export function snapshot(){return {time:state.time,speed:state.speed,selected:state.crew.filter(c=>c.selected).map(c=>c.name),logs:[...state.logs]}}
-export function notify(){window.dispatchEvent(new Event("hardship-update"))}
+export const state:GameState={time:8*3600+30*60,speed:1,crew,food:30,foodCapacity:100,greenhouse:{workerId:null,position:{x:5,y:4},area:{x:3,y:3,w:5,h:3}},logs:["Prototype opérationnel.","Cliquez sur un membre ou dessinez un rectangle de sélection.","Clic droit : déplacement de l'équipe."]};
+export function addLog(message:string){state.logs=[message,...state.logs].slice(0,8);notify()}
+export function snapshot(){return {time:state.time,speed:state.speed,selected:state.crew.filter(c=>c.selected).map(c=>c.name),logs:[...state.logs],food:state.food}}
+const listeners = new Set<() => void>();
+export function subscribe(listener: () => void) {
+ listeners.add(listener);
+ return () => { listeners.delete(listener); };
+}
+export function notify(){for(const listener of listeners)listener()}
+
+export function assignGreenhouse(workerId: string | null) {
+ const worker = state.crew.find(c => c.id === workerId);
+ if (workerId !== null && !worker) return;
+ const destination = state.greenhouse.position;
+ const path = worker ? findPath(worker.position,destination,walkable,WIDTH,HEIGHT) : [];
+ if (worker && !path.length && (worker.position.x !== destination.x || worker.position.y !== destination.y)) {
+  addLog("La serre est inaccessible pour ce membre.");return;
+ }
+ const previous = state.crew.find(c => c.id === state.greenhouse.workerId);
+ if (previous) previous.path = [];
+ state.greenhouse.workerId = workerId;
+ if (worker) worker.path = path;
+ addLog(worker ? `${worker.name} affecté à la serre.` : "Poste de la serre libéré.");
+}
